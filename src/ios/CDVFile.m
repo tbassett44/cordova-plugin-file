@@ -455,7 +455,7 @@ NSString* const kCDVFilesystemURLPrefix = @"cdvfile";
             }
         }
         [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
-    }]
+    }];
 }
 
 
@@ -644,7 +644,7 @@ NSString* const kCDVFilesystemURLPrefix = @"cdvfile";
 
 
         [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
-    }]
+    }];
 }
 
 /*
