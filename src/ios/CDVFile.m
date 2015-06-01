@@ -422,37 +422,40 @@ NSString* const kCDVFilesystemURLPrefix = @"cdvfile";
 - (void)requestFileSystem:(CDVInvokedUrlCommand*)command
 {
     // arguments
-    NSString* strType = [command argumentAtIndex:0];
-    unsigned long long size = [[command argumentAtIndex:1] longLongValue];
+    //push to background thread : )
+    [self.commandDelegate runInBackground:^{
+        NSString* strType = [command argumentAtIndex:0];
+        unsigned long long size = [[command argumentAtIndex:1] longLongValue];
 
-    int type = [strType intValue];
-    CDVPluginResult* result = nil;
+        int type = [strType intValue];
+        CDVPluginResult* result = nil;
 
-    if (type > self.fileSystems.count) {
-        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsInt:NOT_FOUND_ERR];
-        NSLog(@"No filesystem of type requested");
-    } else {
-        NSString* fullPath = @"/";
-        // check for avail space for size request
-        NSNumber* pNumAvail = [self checkFreeDiskSpace:self.rootDocsPath];
-        // NSLog(@"Free space: %@", [NSString stringWithFormat:@"%qu", [ pNumAvail unsignedLongLongValue ]]);
-        if (pNumAvail && ([pNumAvail unsignedLongLongValue] < size)) {
-            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsInt:QUOTA_EXCEEDED_ERR];
+        if (type > self.fileSystems.count) {
+            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsInt:NOT_FOUND_ERR];
+            NSLog(@"No filesystem of type requested");
         } else {
-            NSObject<CDVFileSystem> *rootFs = [self.fileSystems objectAtIndex:type];
-            if (rootFs == nil) {
-                result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsInt:NOT_FOUND_ERR];
-                NSLog(@"No filesystem of type requested");
+            NSString* fullPath = @"/";
+            // check for avail space for size request
+            NSNumber* pNumAvail = [self checkFreeDiskSpace:self.rootDocsPath];
+            // NSLog(@"Free space: %@", [NSString stringWithFormat:@"%qu", [ pNumAvail unsignedLongLongValue ]]);
+            if (pNumAvail && ([pNumAvail unsignedLongLongValue] < size)) {
+                result = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsInt:QUOTA_EXCEEDED_ERR];
             } else {
-                NSMutableDictionary* fileSystem = [NSMutableDictionary dictionaryWithCapacity:2];
-                [fileSystem setObject:rootFs.name forKey:@"name"];
-                NSDictionary* dirEntry = [self makeEntryForPath:fullPath fileSystemName:rootFs.name isDirectory:YES];
-                [fileSystem setObject:dirEntry forKey:@"root"];
-                result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:fileSystem];
+                NSObject<CDVFileSystem> *rootFs = [self.fileSystems objectAtIndex:type];
+                if (rootFs == nil) {
+                    result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsInt:NOT_FOUND_ERR];
+                    NSLog(@"No filesystem of type requested");
+                } else {
+                    NSMutableDictionary* fileSystem = [NSMutableDictionary dictionaryWithCapacity:2];
+                    [fileSystem setObject:rootFs.name forKey:@"name"];
+                    NSDictionary* dirEntry = [self makeEntryForPath:fullPath fileSystemName:rootFs.name isDirectory:YES];
+                    [fileSystem setObject:dirEntry forKey:@"root"];
+                    result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:fileSystem];
+                }
             }
         }
-    }
-    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    }]
 }
 
 
@@ -630,16 +633,18 @@ NSString* const kCDVFilesystemURLPrefix = @"cdvfile";
  */
 - (void)getFile:(CDVInvokedUrlCommand*)command
 {
-    NSString* baseURIstr = [command argumentAtIndex:0];
-    CDVFilesystemURL* baseURI = [self fileSystemURLforArg:baseURIstr];
-    NSString* requestedPath = [command argumentAtIndex:1];
-    NSDictionary* options = [command argumentAtIndex:2 withDefault:nil];
+    [self.commandDelegate runInBackground:^{
+        NSString* baseURIstr = [command argumentAtIndex:0];
+        CDVFilesystemURL* baseURI = [self fileSystemURLforArg:baseURIstr];
+        NSString* requestedPath = [command argumentAtIndex:1];
+        NSDictionary* options = [command argumentAtIndex:2 withDefault:nil];
 
-    NSObject<CDVFileSystem> *fs = [self filesystemForURL:baseURI];
-    CDVPluginResult* result = [fs getFileForURL:baseURI requestedPath:requestedPath options:options];
+        NSObject<CDVFileSystem> *fs = [self filesystemForURL:baseURI];
+        CDVPluginResult* result = [fs getFileForURL:baseURI requestedPath:requestedPath options:options];
 
 
-    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    }]
 }
 
 /*
