@@ -38,6 +38,8 @@ import android.util.Base64;
 import android.net.Uri;
 import android.content.Context;
 import android.content.Intent;
+import android.webkit.CookieManager;
+import android.webkit.WebView;
 
 public class LocalFilesystem extends Filesystem {
     private final Context context;
